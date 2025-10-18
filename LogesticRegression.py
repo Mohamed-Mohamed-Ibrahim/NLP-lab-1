@@ -10,30 +10,30 @@ class LogisticRegressionCustom():
         self.epochs = epochs
         self.threshold = threshold
         self.logging = logging
+        self.eps = 1e-10
 
     def sigmoid(self, z):
         return np.where(
             z >= 0,
-            1 / (1 + np.exp(-z)),
-            np.exp(z) / (1 + np.exp(z))
+            1 / (1 + np.exp(-z)),       # +ve values
+            np.exp(z) / (1 + np.exp(z)) # -ve values
         )
 
     def score(self, X, y):
         predictions = self.sigmoid(X.dot(self.weights) + self.bias)
-        eps = 1e-10
-        predictions = np.clip(predictions, eps, 1 - eps)
-        loss = -np.mean(y * np.log2(predictions) + (1 - y) * np.log2(1 - predictions))
-        return loss
+        predictions = np.clip(predictions, self.eps, 1 - self.eps)
+        return -np.mean(y * np.log2(predictions) + (1 - y) * np.log2(1 - predictions))
+
     def fit(self, X, y):
 
         n_samples, n_features = X.shape
-        self.weights = np.zeros(n_features)
+        self.weights = np.random.randn(n_features)
         self.bias = 0
 
         for epoch in range(self.epochs):
             predictions = self.sigmoid(X.dot(self.weights) + self.bias)
             loss = predictions - y
-            self.weights -= self.lr * (X.T.dot(loss) / n_samples)
+            self.weights -= self.lr * X.T.dot(loss) / n_samples
             self.bias -= self.lr * loss.mean()
 
             if self.logging and epoch % 10 == 0:
@@ -41,35 +41,35 @@ class LogisticRegressionCustom():
 
     def predict(self, X):
         predictions = self.sigmoid(X.dot(self.weights) + self.bias)
-        print(predictions)
-        return np.where(predictions > np.mean(predictions), 1, 0)
+        return np.where(predictions > self.threshold, 1, 0)
 
-# class LogesticRegression2(BaseEstimator, TransformerMixin):
-#     def __init__(self, *, param=1):
-#         self.param = param
-#     def fit(self, X, y=None):
-#         return self
-#     def transform(self, X):
-#         return np.full(shape=len(X), fill_value=self.param)
-#
+class LogesticRegression2(BaseEstimator, TransformerMixin):
+    def __init__(self, *, param=1):
+        self.param = param
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X):
+        return np.full(shape=len(X), fill_value=self.param)
+
 
 if __name__ == '__main__':
     from sklearn.datasets import load_breast_cancer
     from sklearn.model_selection import train_test_split
-    # from sklearn.linear_model import LogisticRegression
+    from sklearn.linear_model import LogisticRegression
     from sklearn.preprocessing import StandardScaler
 
     data = load_breast_cancer()
     X = data.data
     y = data.target
-
     print(X, y)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    clf = LogisticRegressionCustom(epochs=1000, logging=True)
+    ok = LogisticRegression()
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)  # fit + transform training data
     X_test = scaler.transform(X_test)
-    clf = LogisticRegressionCustom(logging=True)
     clf.fit(X_train, y_train)
-    print(clf.score(X_test, y_test))
+    ok.fit(X_train, y_train)
     print(clf.predict(X_test))
+    print(ok.predict(X_test))
     print(y_test)
