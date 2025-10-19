@@ -72,21 +72,25 @@ class LogisticRegressionCustom:
 def confusion_matrix_custom(predicts, labels):
 
     n_classes = len(np.unique(labels))
-    confusion_matrix = np.zeros((n_classes, n_classes), dtype=int)
+    cm = np.zeros((n_classes, n_classes), dtype=int)
     precision_vector = np.zeros(n_classes)
     recall_vector = np.zeros(n_classes)
     f1_vector = np.zeros(n_classes)
 
     for i in range(n_classes):
         for j in range(n_classes):
-            confusion_matrix[i][j] = np.sum((predicts == i) & (labels == j))
+            cm[i][j] = np.sum((predicts == i) & (labels == j))
 
-    for i in range(n_classes):
-        precision_vector[i] = confusion_matrix[i][i] / np.sum(confusion_matrix[:, i])
-        recall_vector[i] = confusion_matrix[i][i] / np.sum(confusion_matrix[i])
-        f1_vector[i] = 2 * precision_vector[i] * recall_vector[i] / (precision_vector[i] + recall_vector[i])
+    with np.errstate(divide='ignore', invalid='ignore'):  # avoids ZeroDivision warnings
+        precision_vector = np.diag(cm) / cm.sum(axis=0)
+        recall_vector = np.diag(cm) / cm.sum(axis=1)
+        f1_vector = 2 * precision_vector * recall_vector / (precision_vector + recall_vector)
 
-    return confusion_matrix, np.mean(precision_vector), np.mean(recall_vector), np.mean(f1_vector)
+    precision = np.nan_to_num(precision_vector).mean()
+    recall = np.nan_to_num(recall_vector).mean()
+    f1 = np.nan_to_num(f1_vector).mean()
+
+    return cm, precision, recall, f1
 
 if __name__ == '__main__':
     from sklearn.datasets import load_breast_cancer
@@ -99,7 +103,7 @@ if __name__ == '__main__':
     X = data.data
     y = data.target
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    clf = LogisticRegressionCustom(epochs=10, logging=True)
+    clf = LogisticRegressionCustom(threshold=0.5, epochs=10, logging=True)
     ok = LogisticRegression()
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)  # fit + transform training data
