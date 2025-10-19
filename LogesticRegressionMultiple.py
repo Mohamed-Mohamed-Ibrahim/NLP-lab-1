@@ -4,7 +4,7 @@ np.random.seed(42)
 
 class LogisticRegressionCustom:
 
-    def __init__(self, lr=0.001, epochs=10, threshold=0.5, logging=False, reg_lambda=0.01, patience=5, batch_size=64):
+    def __init__(self, lr=0.01, epochs=100, threshold=0.5, logging=False, reg_lambda=0.01, patience=5, batch_size=32):
         self.lr = lr
         self.epochs = epochs
         self.threshold = threshold
@@ -47,7 +47,7 @@ class LogisticRegressionCustom:
                 y_batch = y[i:i + self.batch_size]
                 predictions = self.sigmoid(X_batch.dot(self.weights) + self.bias)
                 loss = predictions - y_batch
-                self.weights -= self.lr * (X_batch.T.dot(loss) / n_samples + self.reg_lambda * self.weights)
+                self.weights -= self.lr * ((X_batch.T.dot(loss) / len(y_batch)) + self.reg_lambda * self.weights)
                 self.bias -= self.lr * loss.mean()
 
             bce = self.score(X, y)
@@ -67,6 +67,8 @@ class LogisticRegressionCustom:
     def predict(self, X):
         predictions = self.sigmoid(X.dot(self.weights) + self.bias)
         return np.where(predictions > self.threshold, 1, 0)
+    def predict_prob(self, X):
+        return self.sigmoid(X.dot(self.weights) + self.bias)
 
 
 def confusion_matrix_custom(predicts, labels):
@@ -92,6 +94,33 @@ def confusion_matrix_custom(predicts, labels):
 
     return cm, precision, recall, f1
 
+class OneVSAllCustom:
+    def __init__(self, base_classifier_class, params: dict={}):
+        self.base_classifier_class = base_classifier_class
+        self.params = params
+        self.clfs = {}
+
+    def fit(self, X, y):
+        self.unique_labels = np.unique(y)
+        for label in self.unique_labels:
+            labels = (y == label).astype(int)
+
+            clf = LogisticRegressionCustom(**self.params)
+
+            clf.fit(X, labels)
+
+            self.clfs[label] = clf
+
+
+    def predict(self, X):
+        scores = []
+
+        for label in self.unique_labels:
+            score = self.clfs[label].predict_prob(X)
+            scores.append(score)
+        scores = np.array(scores)
+        return self.unique_labels[np.argmax(scores.T, axis=1)]
+
 if __name__ == '__main__':
     from sklearn.datasets import load_iris
     from sklearn.model_selection import train_test_split
@@ -103,7 +132,7 @@ if __name__ == '__main__':
     X = data.data
     y = data.target
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    clf = LogisticRegressionCustom(threshold=0.5, epochs=10, logging=True)
+    clf = OneVSAllCustom(LogisticRegressionCustom)
     ok = LogisticRegression()
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)  # fit + transform training data
@@ -117,4 +146,6 @@ if __name__ == '__main__':
     print(recall_score(clf.predict(X_test), y_test, average='macro'))
     print(f1_score(clf.predict(X_test), y_test, average='macro'))
     cm, precision, recall, f1= confusion_matrix_custom(clf.predict(X_test), y_test)
+    print(cm, precision, recall, f1)
+    cm, precision, recall, f1= confusion_matrix_custom(ok.predict(X_test), y_test)
     print(cm, precision, recall, f1)
