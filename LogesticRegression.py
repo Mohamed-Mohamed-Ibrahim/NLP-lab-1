@@ -70,17 +70,12 @@ def confusion_matrix_custom(predicts, labels):
         for j in range(n_classes):
             confusion_matrix[i][j] = np.sum((predicts == i) & (labels == j))
 
-    # for i in range(n_classes):
-    #         if i == j:
-    #             precision_vector[i] = confusion_matrix[i][j]
+    for i in range(n_classes):
+        precision_vector[i] = confusion_matrix[i][i] / np.sum(confusion_matrix[:, i])
+        recall_vector[i] = confusion_matrix[i][i] / np.sum(confusion_matrix[i])
+        f1_vector[i] = 2 * precision_vector[i] * recall_vector[i] / (precision_vector[i] + recall_vector[i])
 
-    # confusion_matrix = np.array(
-    #     [
-    #         [np.sum((predicts == 0) & (labels == 0)), np.sum((predicts == 0) & (labels == 1))],
-    #         [np.sum((predicts == 1) & (labels == 0)), np.sum((predicts == 1) & (labels == 1))]
-    #     ]
-    # )
-    return confusion_matrix
+    return confusion_matrix, np.mean(precision_vector), np.mean(recall_vector), np.mean(f1_vector)
 
 if __name__ == '__main__':
     from sklearn.datasets import load_breast_cancer
@@ -102,5 +97,9 @@ if __name__ == '__main__':
     ok.fit(X_train, y_train)
     print(np.sum(clf.predict(X_test) == y_test))
     print(np.sum(ok.predict(X_test) == y_test))
-    print(confusion_matrix(ok.predict(X_test), y_test), precision_score(ok.predict(X_test), y_test), recall_score(ok.predict(X_test), y_test), f1_score(ok.predict(X_test), y_test))
-    print(confusion_matrix_custom(ok.predict(X_test), y_test))
+    print(confusion_matrix(ok.predict(X_test), y_test), precision_score(ok.predict(X_test), y_test, average='macro'), recall_score(ok.predict(X_test), y_test), f1_score(ok.predict(X_test), y_test))
+    print(precision_score(ok.predict(X_test), y_test, average='macro'))
+    print(recall_score(ok.predict(X_test), y_test, average='macro'))
+    print(f1_score(ok.predict(X_test), y_test, average='macro'))
+    cm, precision, recall, f1= confusion_matrix_custom(ok.predict(X_test), y_test)
+    print(cm, precision, recall, f1)
