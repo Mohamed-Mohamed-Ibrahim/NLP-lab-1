@@ -1,9 +1,10 @@
 import numpy as np
+np.random.seed(42)
 
 
 class LogisticRegressionCustom:
 
-    def __init__(self, lr=0.001, epochs=100, threshold=0.5, logging=False, reg_lambda=0.01, patience=5):
+    def __init__(self, lr=0.001, epochs=10, threshold=0.5, logging=False, reg_lambda=0.01, patience=5, batch_size=64):
         self.lr = lr
         self.epochs = epochs
         self.threshold = threshold
@@ -11,6 +12,7 @@ class LogisticRegressionCustom:
         self.eps = 1e-5
         self.reg_lambda = reg_lambda
         self.patience = patience
+        self.batch_size = batch_size
 
     def sigmoid(self, z):
         return np.where(
@@ -28,16 +30,25 @@ class LogisticRegressionCustom:
         X = X.astype(np.float32)
         y = y.astype(np.float32)
         n_samples, n_features = X.shape
-        self.weights = np.random.randn(n_features)
+        self.weights = np.zeros(n_features)
         self.bias = 0
         prev_loss = 0
         early_stopping_counter = 0
-
         for epoch in range(self.epochs):
-            predictions = self.sigmoid(X.dot(self.weights) + self.bias)
-            loss = predictions - y
-            self.weights -= self.lr * (X.T.dot(loss) / n_samples + self.reg_lambda * self.weights)
-            self.bias -= self.lr * loss.mean()
+
+            # Shuffle data
+            indices = np.random.permutation(n_samples)
+            X = X[indices]
+            y = y[indices]
+
+            for i in range(0, n_samples, self.batch_size):
+
+                X_batch = X[i:i + self.batch_size]
+                y_batch = y[i:i + self.batch_size]
+                predictions = self.sigmoid(X_batch.dot(self.weights) + self.bias)
+                loss = predictions - y_batch
+                self.weights -= self.lr * (X_batch.T.dot(loss) / n_samples + self.reg_lambda * self.weights)
+                self.bias -= self.lr * loss.mean()
 
             bce = self.score(X, y)
 
@@ -88,7 +99,7 @@ if __name__ == '__main__':
     X = data.data
     y = data.target
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    clf = LogisticRegressionCustom(epochs=1000, logging=True)
+    clf = LogisticRegressionCustom(epochs=10, logging=True)
     ok = LogisticRegression()
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)  # fit + transform training data
@@ -97,9 +108,9 @@ if __name__ == '__main__':
     ok.fit(X_train, y_train)
     print(np.sum(clf.predict(X_test) == y_test))
     print(np.sum(ok.predict(X_test) == y_test))
-    print(confusion_matrix(ok.predict(X_test), y_test), precision_score(ok.predict(X_test), y_test, average='macro'), recall_score(ok.predict(X_test), y_test), f1_score(ok.predict(X_test), y_test))
-    print(precision_score(ok.predict(X_test), y_test, average='macro'))
-    print(recall_score(ok.predict(X_test), y_test, average='macro'))
-    print(f1_score(ok.predict(X_test), y_test, average='macro'))
-    cm, precision, recall, f1= confusion_matrix_custom(ok.predict(X_test), y_test)
+    print(confusion_matrix(clf.predict(X_test), y_test), precision_score(clf.predict(X_test), y_test, average='macro'), recall_score(clf.predict(X_test), y_test), f1_score(clf.predict(X_test), y_test))
+    print(precision_score(clf.predict(X_test), y_test, average='macro'))
+    print(recall_score(clf.predict(X_test), y_test, average='macro'))
+    print(f1_score(clf.predict(X_test), y_test, average='macro'))
+    cm, precision, recall, f1= confusion_matrix_custom(clf.predict(X_test), y_test)
     print(cm, precision, recall, f1)
