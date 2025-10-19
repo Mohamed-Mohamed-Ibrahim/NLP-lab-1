@@ -58,11 +58,36 @@ class LogisticRegressionCustom():
         return np.where(predictions > self.threshold, 1, 0)
 
 
+def confusion_matrix_custom(predicts, labels):
+
+    n_classes = len(np.unique(labels))
+    confusion_matrix = np.zeros((n_classes, n_classes), dtype=int)
+    precision_vector = np.zeros(n_classes)
+    recall_vector = np.zeros(n_classes)
+    f1_vector = np.zeros(n_classes)
+
+    for i in range(n_classes):
+        for j in range(n_classes):
+            confusion_matrix[i][j] = np.sum((predicts == i) & (labels == j))
+
+    # for i in range(n_classes):
+    #         if i == j:
+    #             precision_vector[i] = confusion_matrix[i][j]
+
+    # confusion_matrix = np.array(
+    #     [
+    #         [np.sum((predicts == 0) & (labels == 0)), np.sum((predicts == 0) & (labels == 1))],
+    #         [np.sum((predicts == 1) & (labels == 0)), np.sum((predicts == 1) & (labels == 1))]
+    #     ]
+    # )
+    return confusion_matrix
+
 if __name__ == '__main__':
     from sklearn.datasets import load_breast_cancer
     from sklearn.model_selection import train_test_split
     from sklearn.linear_model import LogisticRegression
     from sklearn.preprocessing import StandardScaler
+    from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score
 
     data = load_breast_cancer()
     X = data.data
@@ -77,3 +102,5 @@ if __name__ == '__main__':
     ok.fit(X_train, y_train)
     print(np.sum(clf.predict(X_test) == y_test))
     print(np.sum(ok.predict(X_test) == y_test))
+    print(confusion_matrix(ok.predict(X_test), y_test), precision_score(ok.predict(X_test), y_test), recall_score(ok.predict(X_test), y_test), f1_score(ok.predict(X_test), y_test))
+    print(confusion_matrix_custom(ok.predict(X_test), y_test))
