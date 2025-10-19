@@ -4,7 +4,7 @@ np.random.seed(42)
 
 class LogisticRegressionCustom:
 
-    def __init__(self, lr=0.01, epochs=100, threshold=0.5, logging=False, reg_lambda=0.01, patience=5, batch_size=32):
+    def __init__(self, lr=0.01, epochs=100, threshold=0.5, logging=False, reg_lambda=0.01, patience=10, batch_size=32):
         self.lr = lr
         self.epochs = epochs
         self.threshold = threshold
@@ -32,7 +32,7 @@ class LogisticRegressionCustom:
         n_samples, n_features = X.shape
         self.weights = np.zeros(n_features)
         self.bias = 0
-        prev_loss = 0
+        best_loss = float('inf')
         early_stopping_counter = 0
         for epoch in range(self.epochs):
 
@@ -52,17 +52,17 @@ class LogisticRegressionCustom:
 
             bce = self.score(X, y)
 
-            if np.abs(bce - prev_loss) < self.eps:
+            if bce < best_loss:
                 if early_stopping_counter < self.patience:
                     early_stopping_counter += 1
                 else:
                     break
             else:
                 early_stopping_counter = 0
-            prev_loss = bce
+                best_loss = bce
 
             if self.logging and epoch % 10 == 0:
-                print("epoch:", epoch, "loss:", bce)
+                print("epoch:", epoch+1, "loss:", bce)
 
     def predict(self, X):
         predictions = self.sigmoid(X.dot(self.weights) + self.bias)
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     X = data.data
     y = data.target
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    clf = OneVSAllCustom(LogisticRegressionCustom)
+    clf = OneVSAllCustom(LogisticRegressionCustom, {"logging" : True, "patience":20})
     ok = LogisticRegression()
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)  # fit + transform training data
