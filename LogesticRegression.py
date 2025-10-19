@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class LogisticRegressionCustom():
+class LogisticRegressionCustom:
 
     def __init__(self, lr=0.001, epochs=100, threshold=0.5, logging=False, reg_lambda=0.01, patience=5):
         self.lr = lr
