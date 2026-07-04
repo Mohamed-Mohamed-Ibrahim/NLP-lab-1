@@ -67,5 +67,5 @@ Implementation of core evaluation metrics purely in NumPy to compare with `sklea
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/yourusername/nlp-foundations-lab.git](https://github.com/yourusername/nlp-foundations-lab.git)
+   git clone [https://github.com/OmarHani4306/nlp-foundations-lab.git](https://github.com/OmarHani4306/nlp-foundations-lab.git)
    cd nlp-foundations-lab
